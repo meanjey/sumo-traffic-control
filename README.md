@@ -8,7 +8,7 @@
 
 **第一步：安装环境**
 
-1.  **安装 SUMO**: 如果你电脑上没有，请先去[官网](https://www.eclipse.org/sumo/docs/Downloads.php)下载安装。
+1.  **安装 SUMO**: 如果你电脑上没有，请先去[官网](https://www.eclipse.org/sumo/docs/Downloads.php)下载安装。（最好还是1.23.1）
 2.  **安装 Python 库**: 在PyCharm底部的**Terminal**窗口中，运行下面这行命令：
     ```bash
     pip install -r requirements.txt
