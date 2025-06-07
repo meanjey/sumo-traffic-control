@@ -4,24 +4,31 @@
 
 ## 快速上手指南 (给队友)
 
-你好！要运行这个项目，请按以下两个简单步骤操作：
+你好！要运行这个项目，请按以下三个简单步骤操作：
 
 **第一步：安装环境**
 
 1.  **安装 SUMO**: 如果你电脑上没有，请先去[官网](https://www.eclipse.org/sumo/docs/Downloads.php)下载安装。
-2.  **安装 Python 库**: 打开终端，进入这个项目文件夹，然后运行下面这行命令：
+2.  **安装 Python 库**: 在PyCharm底部的**Terminal**窗口中，运行下面这行命令：
     ```bash
     pip install -r requirements.txt
     ```
 
-**第二步：运行脚本**
+**第二步：在PyCharm中配置SUMO路径**
 
-直接运行主程序，然后根据菜单提示进行选择：
-```bash
-# 记得把 "你的SUMO安装路径" 换成你自己的
-$env:SUMO_HOME="你的SUMO安装路径"; python main.py
-```
-脚本启动后，你会看到一个菜单，让你选择是**训练**还是**测试**模型，以及是否需要**显示图形界面**。
+1.  在PyCharm顶部菜单，选择 **Run** -> **Edit Configurations...**。
+2.  在弹出的窗口左侧，选择我们的 `main` 脚本。
+3.  在右侧的 **Environment variables** 字段，点击旁边的文件夹图标。
+4.  在新的小窗口里，点击 **+** 号，添加一个新的环境变量：
+    -   **Name**: `SUMO_HOME`
+    -   **Value**: `你的SUMO安装路径` (例如: `K:\sumo`)
+5.  点击 **OK** 保存所有设置。**这个设置只需做一次，以后就不用再管了。**
+
+**第三步：运行脚本**
+
+1.  在PyCharm左侧的文件浏览器里，右键点击 `main.py` 文件。
+2.  选择 **Run 'main'**。
+3.  程序启动后，你会在底部的**Run**窗口看到一个菜单，让你选择是**训练**还是**测试**模型。
 
 ---
 
@@ -62,40 +69,26 @@ pip install -r requirements.txt
 ## 使用方法
 
 ### 运行程序
-要启动本项目，只需运行主脚本。请确保已设置 `SUMO_HOME` 环境变量。
+本项目推荐在PyCharm IDE中运行。
 
-```bash
-# 在Windows (PowerShell)上:
-$env:SUMO_HOME="你的SUMO安装路径"; python main.py
+1.  **首次运行前的配置**:
+    请参照上方"快速上手指南"的**第二步**，在PyCharm的"Run/Debug Configurations"中为`main.py`脚本设置好`SUMO_HOME`环境变量。这可以确保PyCharm每次都能找到SUMO。
 
-# 在Linux/macOS上:
-export SUMO_HOME="你的SUMO安装路径" && python main.py
-```
-
-程序启动后，会显示一个菜单供您选择：
-1.  **后台训练 (无GUI，效率最高):** 选择此项开始一个新的训练任务，过程在后台运行。
-2.  **可视化训练 (有GUI，方便观察):** 选择此项开始训练，并实时显示SUMO仿真界面。
-3.  **测试已保存的模型 (有GUI):** 选择此项加载已有的 `ppo_traffic_light_controller.zip` 模型，并在GUI模式下进行测试和演示。
+2.  **开始运行**:
+    配置完成后，只需在PyCharm中右键点击`main.py`并选择**Run 'main'**即可启动。程序会在底部的**Run**窗口中显示一个菜单供您选择：
+    - **模式1 (后台训练)**: 无图形界面，训练速度最快。
+    - **模式2 (可视化训练)**: 启动SUMO图形界面，可以实时观察训练过程。
+    - **模式3 (测试模型)**: 启动SUMO图形界面，并加载一个已保存的模型进行演示。
 
 ### 监控训练过程
-在模型训练的同时 (选择模式1或2后)，您可以打开**一个新的终端**来启动TensorBoard，实时查看训练指标。
-1.  首先，确保您在新终端中也进入了项目根目录。
+在模型开始训练后 (选择了模式1或2)，您可以打开PyCharm内置的终端来启动TensorBoard。
+
+1.  在PyCharm窗口底部，点击**Terminal**标签页，打开一个终端。
 2.  运行以下命令：
     ```bash
     tensorboard --logdir ./ppo_tensorboard_logs/
     ```
-3.  在浏览器中打开TensorBoard提供的URL (通常是 `http://localhost:6006`)。在`SCALARS`选项卡下，您可以找到 `rollout/ep_rew_mean` 图表，它显示了每个回合的平均奖励，这是判断模型是否在改进的关键指标。
-
-### 测试已训练的模型
-在您或您的队友训练好一个模型 (`ppo_traffic_light_controller.zip`) 之后，可以使用以下命令在GUI模式下加载并测试它：
-```bash
-# 在Windows (PowerShell)上:
-$env:SUMO_HOME="你的SUMO安装路径"; python main.py --test
-
-# 在Linux/macOS上:
-export SUMO_HOME="你的SUMO安装路径" && python main.py --test
-```
-该命令会自动启动SUMO的GUI界面，并运行一个完整的仿真回合，让您可以直观地观察智能体的决策效果。
+3.  按住`Ctrl`并点击终端里显示的`http://localhost:6006`链接，即可在浏览器中查看实时图表。
 
 ## 系统原理
 
