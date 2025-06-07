@@ -10,6 +10,7 @@ __pycache__/
 
 # 忽略训练过程中生成的模型和TensorBoard日志
 ppo_tensorboard_logs/
+saved_models/
 ppo_traffic_light_controller.zip
 
 # 忽略IDE的配置文件

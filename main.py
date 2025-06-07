@@ -12,6 +12,8 @@ import xml.etree.ElementTree as ET # Import for XML parsing
 import gymnasium as gym
 from gymnasium import spaces
 from stable_baselines3 import PPO # 导入PPO
+from datetime import datetime # 导入datetime
+from tensorboard.backend.event_processing import event_accumulator # 导入读取日志的工具
 # import argparse # 不再需要命令行参数
 
 # 确保SUMO_HOME环境变量已设置
@@ -356,6 +358,9 @@ class SumoTrafficEnv(gym.Env):
         self.action_space = spaces.Discrete(2) # 2个离散动作
         
         self.current_step = 0
+        
+        # 在初始化时就启动SUMO，确保只启动一次
+        self._start_sumo()
 
     def _start_sumo(self):
         """启动SUMO仿真"""
@@ -408,16 +413,16 @@ class SumoTrafficEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         """重置环境，开始新的回合"""
-        super().reset(seed=seed) # 调用父类的reset
+        super().reset(seed=seed)
 
-        if self._sumo_started: # 检查标志，避免重复关闭或关闭未启动的仿真
-            print("关闭现有SUMO仿真...")
-            traci.close()
-            self._sumo_started = False
-            time.sleep(1) # 给SUMO时间来完全关闭
-            print("SUMO仿真已关闭。")
-            
-        self._start_sumo()
+        # 不再关闭和重启SUMO，而是使用traci.load来重置仿真状态
+        sumo_cmd = ["-c", self.sumocfg_file, "--step-length", "1", "--quit-on-end", "--no-warnings"]
+        if self.render_mode == 'human':
+            sumo_cmd.extend(["--start", "--verbose"])
+        else:
+            sumo_cmd.append("--no-step-log")
+        traci.load(sumo_cmd)
+        
         self.step_count = 0 # 重置步数计数器
 
         # 重新获取交通信号灯ID，以防load重置
@@ -458,6 +463,24 @@ def force_close_sumo():
         print("SUMO进程已强制关闭。")
     except Exception as e:
         print(f"强制关闭SUMO时出错: {e}")
+
+def get_final_reward_from_logs(log_path):
+    """从TensorBoard日志文件中读取最终的平均奖励"""
+    try:
+        # 加载日志文件
+        acc = event_accumulator.EventAccumulator(log_path, size_guidance={'scalars': 0})
+        acc.Reload()
+        
+        # 检查'rollout/ep_rew_mean'标签是否存在
+        if 'rollout/ep_rew_mean' in acc.Tags()['scalars']:
+            events = acc.Scalars('rollout/ep_rew_mean')
+            if events:
+                # 返回最后一个事件的值
+                return events[-1].value
+    except Exception as e:
+        # print(f"读取日志 {log_path} 时出错: {e}") # 可选的调试信息
+        pass
+    return None # 如果找不到或出错，返回None
 
 def main():
     # # 不再使用命令行参数
@@ -500,9 +523,19 @@ def main():
     # SUMO配置文件路径
     sumocfg_file = "new_simulation.sumocfg"
     
-    # 定义TensorBoard日志目录
+    # --- 日志和模型保存路径设置 ---
+    # 定义TensorBoard的根日志目录
     tensorboard_log_dir = "./ppo_tensorboard_logs/"
     os.makedirs(tensorboard_log_dir, exist_ok=True)
+    
+    # 创建保存模型的目录
+    model_save_dir = "./saved_models/"
+    os.makedirs(model_save_dir, exist_ok=True)
+    
+    # 为本次运行创建一个带时间戳的唯一名称
+    run_name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_dir_for_this_run = os.path.join(tensorboard_log_dir, run_name)
+    model_path_for_this_run = os.path.join(model_save_dir, f"{run_name}.zip")
 
     # 不再在main中提前启动和关闭traci，由环境的reset方法处理
     # tls_ids 在这里可以是一个预定义的列表，或者在环境内部动态获取
@@ -519,13 +552,43 @@ def main():
 
     # 如果是测试模式，加载模型并运行
     if test_mode:
-        model_path = "ppo_traffic_light_controller.zip"
-        if not os.path.exists(model_path):
-            print(f"错误: 找不到模型文件 {model_path}。请先进行训练。")
+        # 列出所有已保存的模型并获取它们的最终奖励
+        model_infos = []
+        saved_model_files = [f for f in os.listdir(model_save_dir) if f.endswith('.zip')]
+
+        for model_file in saved_model_files:
+            run_name_from_file = model_file.replace('.zip', '')
+            log_path_for_model = os.path.join(tensorboard_log_dir, run_name_from_file)
+            final_reward = get_final_reward_from_logs(log_path_for_model)
+            model_infos.append({
+                "file": model_file,
+                "reward": final_reward if final_reward is not None else -float('inf') # 如果没有奖励，则排在最后
+            })
+
+        # 按奖励从高到低排序
+        model_infos.sort(key=lambda x: x['reward'], reverse=True)
+
+        if not model_infos:
+            print(f"错误: 在 '{model_save_dir}' 目录下找不到任何已保存的模型 (.zip文件)。")
             return
-            
-        print(f"--- 加载模型 {model_path} 并进入测试模式 ---")
-        model = PPO.load(model_path, env=env)
+
+        print("\n--- 请选择要加载的模型 (已按性能排序) ---")
+        for i, info in enumerate(model_infos):
+            reward_str = f"{info['reward']:.2f}" if info['reward'] > -float('inf') else "N/A"
+            print(f"  {i + 1}: {info['file']} (最终奖励: {reward_str})")
+
+        model_choice = -1
+        while model_choice < 1 or model_choice > len(model_infos):
+            try:
+                raw_choice = input(f"请输入选项 (1-{len(model_infos)}): ")
+                model_choice = int(raw_choice)
+            except ValueError:
+                pass
+        
+        chosen_model_path = os.path.join(model_save_dir, model_infos[model_choice - 1]['file'])
+        
+        print(f"--- 加载模型 {chosen_model_path} 并进入测试模式 ---")
+        model = PPO.load(chosen_model_path, env=env)
         
         observation, info = env.reset()
         for _ in range(3600): # 运行一个完整的episode
@@ -539,45 +602,23 @@ def main():
 
     # 否则，进入训练模式
     # 初始化PPO智能体
-    model = PPO("MlpPolicy", env, verbose=1, learning_rate=0.0003, n_steps=2048, batch_size=64, tensorboard_log=tensorboard_log_dir) # 添加tensorboard_log
+    model = PPO("MlpPolicy", env, verbose=1, learning_rate=0.0003, n_steps=2048, batch_size=64, tensorboard_log=log_dir_for_this_run) # 使用带时间戳的日志路径
 
-    num_episodes = 50 # 增加回合数以便训练
-    max_steps_per_episode = 3600 # 每个回合的最大仿真步数
-
-    for episode in range(num_episodes):
-        print(f"\n--- 回合 {episode + 1}/{num_episodes} 开始 ---")
-        observation, info = env.reset()
-        total_reward = 0
-        
-        for step in range(max_steps_per_episode):
-            action, _states = model.predict(observation, deterministic=False) # 使用模型预测动作
-            observation, reward, terminated, truncated, info = env.step(action)
-            total_reward += reward
-            
-            # 在这里进行模型的学习 (例如，每N步或每个回合结束)
-            # 对于PPO，通常在每个回合结束或达到一定步数后进行学习
-            # 这里简化为在每个step之后learn，实际RL训练需要更复杂的缓冲区和学习策略
-            # model.learn(total_timesteps=1) # 每次一步进行学习 (效率不高，仅作演示)
-            
-            if step % 100 == 0:
-                print(f"步骤 {step}: 总奖励 {total_reward:.2f}")
-                # print(f"路口 {info['tls_id']}: 相位 {info['current_phase']}, 车辆数 {info['total_vehicles']}, 排队长度 (NS/EW) {info['ns_queue_length']:.2f}/{info['ew_queue_length']:.2f}")
-            
-            if terminated or truncated:
-                print(f"回合 {episode + 1} 在 {step + 1} 步结束。总奖励: {total_reward:.2f}")
-                break
-        
-        # 每个回合结束后进行模型学习
-        model.learn(total_timesteps=step + 1) # 让模型学习整个回合的数据
-
-        print(f"--- 回合 {episode + 1}/{num_episodes} 结束 ---")
+    # 定义总训练步数
+    total_training_steps = 180000  # 大约等于 50个回合 (50 * 3600)
     
-    # 保存训练好的模型
-    model.save("ppo_traffic_light_controller")
-    print("模型已保存为 ppo_traffic_light_controller.zip")
+    try:
+        # 移除手动的回合循环，直接调用learn()方法进行训练
+        # stable-baselines3的learn()方法会内部处理环境的重置
+        model.learn(total_timesteps=total_training_steps, progress_bar=True)
+    
+    finally:
+        # 无论训练是正常结束还是被中断，都使用带时间戳的路径保存模型
+        model.save(model_path_for_this_run)
+        print(f"\n模型已保存到: {model_path_for_this_run}")
 
-    env.close()
-    print("已关闭SUMO仿真环境")
+        env.close()
+        print("已关闭SUMO仿真环境")
 
 if __name__ == "__main__":
     main() 
