@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <!-- 定义车辆类型 -->
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5" minGap="2.5" maxSpeed="15" color="1,0,0" guiShape="passenger"/>
+    <vType id="bus" accel="2.0" decel="4.0" sigma="0.5" length="12" minGap="3.0" maxSpeed="12" color="0.5,0.5,1" guiShape="bus"/>
+    
+    <!-- 定义路线 - 主要直行流量 -->
+    <route id="route_bottom0A0_A0A1_A1top0" edges="bottom0A0 A0A1 A1top0"/>  <!-- bottom0 to top0 -->
+    <route id="route_top0A1_A1A0_A0bottom0" edges="top0A1 A1A0 A0bottom0"/>  <!-- top0 to bottom0 -->
+    <route id="route_left0A0_A0B0_B0right0" edges="left0A0 A0B0 B0right0"/>  <!-- left0 to right0 -->
+    <route id="route_right0B0_B0A0_A0left0" edges="right0B0 B0A0 A0left0"/>  <!-- right0 to left0 -->
+
+    <route id="route_bottom1B0_B0B1_B1top1" edges="bottom1B0 B0B1 B1top1"/>  <!-- bottom1 to top1 -->
+    <route id="route_top1B1_B1B0_B0bottom1" edges="top1B1 B1B0 B0bottom1"/>  <!-- top1 to bottom1 -->
+    <route id="route_left1A1_A1B1_B1right1" edges="left1A1 A1B1 B1right1"/>  <!-- left1 to right1 -->
+    <route id="route_right1B1_B1A1_A1left1" edges="right1B1 B1A1 A1left1"/>  <!-- right1 to left1 -->
+
+    <!-- 定义路线 - 转弯流量 (A0, A1, B0, B1 路口) -->
+    <!-- A0 路口 -->
+    <route id="route_bottom0A0_A0left0" edges="bottom0A0 A0left0"/>   <!-- South to West -->
+    <route id="route_bottom0A0_A0B0" edges="bottom0A0 A0B0"/>     <!-- South to East -->
+    <route id="route_left0A0_A0A1" edges="left0A0 A0A1"/>       <!-- West to North -->
+    <route id="route_left0A0_A0bottom0" edges="left0A0 A0bottom0"/>  <!-- West to South -->
+    
+    <!-- A1 路口 -->
+    <route id="route_top0A1_A1left1" edges="top0A1 A1left1"/>     <!-- North to West -->
+    <route id="route_top0A1_A1B1" edges="top0A1 A1B1"/>       <!-- North to East -->
+    <route id="route_left1A1_A1A0" edges="left1A1 A1A0"/>       <!-- West to South -->
+    <route id="route_left1A1_A1top0" edges="left1A1 A1top0"/>    <!-- West to North -->
+
+    <!-- B0 路口 -->
+    <route id="route_bottom1B0_B0A0" edges="bottom1B0 B0A0"/>     <!-- South to West -->
+    <route id="route_bottom1B0_B0right0" edges="bottom1B0 B0right0"/>  <!-- South to East -->
+    <route id="route_right0B0_B0A0" edges="right0B0 B0A0"/>       <!-- East to North -->
+    <route id="route_right0B0_B0bottom1" edges="right0B0 B0bottom1"/>  <!-- East to South -->
+
+    <!-- B1 路口 -->
+    <route id="route_top1B1_B1right1" edges="top1B1 B1right1"/>     <!-- North to East -->
+    <route id="route_top1B1_B1A1" edges="top1B1 B1A1"/>         <!-- North to West -->
+    <route id="route_right1B1_B1A1" edges="right1B1 B1A1"/>       <!-- East to South -->
+    <route id="route_right1B1_B1top1" edges="right1B1 B1top1"/>    <!-- East to North -->
+
+    <!-- 定义车流 - 增加车辆数量和频率 -->
+    <flow id="flow_bottom0A0_A0A1_A1top0" type="car" route="route_bottom0A0_A0A1_A1top0" begin="0" end="3600" period="0.5" departLane="random"/>
+    <flow id="flow_top0A1_A1A0_A0bottom0" type="car" route="route_top0A1_A1A0_A0bottom0" begin="0" end="3600" period="0.5" departLane="random"/>
+    <flow id="flow_left0A0_A0B0_B0right0" type="car" route="route_left0A0_A0B0_B0right0" begin="0" end="3600" period="0.5" departLane="random"/>
+    <flow id="flow_right0B0_B0A0_A0left0" type="car" route="route_right0B0_B0A0_A0left0" begin="0" end="3600" period="0.5" departLane="random"/>
+
+    <flow id="flow_bottom1B0_B0B1_B1top1" type="car" route="route_bottom1B0_B0B1_B1top1" begin="0" end="3600" period="0.5" departLane="random"/>
+    <flow id="flow_top1B1_B1B0_B0bottom1" type="car" route="route_top1B1_B1B0_B0bottom1" begin="0" end="3600" period="0.5" departLane="random"/>
+    <flow id="flow_left1A1_A1B1_B1right1" type="car" route="route_left1A1_A1B1_B1right1" begin="0" end="3600" period="0.5" departLane="random"/>
+    <flow id="flow_right1B1_B1A1_A1left1" type="car" route="route_right1B1_B1A1_A1left1" begin="0" end="3600" period="0.5" departLane="random"/>
+
+    <!-- 转弯流量 -->
+    <flow id="flow_bottom0A0_A0left0" type="car" route="route_bottom0A0_A0left0" begin="0" end="3600" period="1" departLane="random"/>
+    <flow id="flow_bottom0A0_A0B0" type="car" route="route_bottom0A0_A0B0" begin="0" end="3600" period="1" departLane="random"/>
+    <flow id="flow_left0A0_A0A1" type="car" route="route_left0A0_A0A1" begin="0" end="3600" period="1" departLane="random"/>
+    <flow id="flow_left0A0_A0bottom0" type="car" route="route_left0A0_A0bottom0" begin="0" end="3600" period="1" departLane="random"/>
+
+    <flow id="flow_top0A1_A1left1" type="car" route="route_top0A1_A1left1" begin="0" end="3600" period="1" departLane="random"/>
+    <flow id="flow_top0A1_A1B1" type="car" route="route_top0A1_A1B1" begin="0" end="3600" period="1" departLane="random"/>
+    <flow id="flow_left1A1_A1A0" type="car" route="route_left1A1_A1A0" begin="0" end="3600" period="1" departLane="random"/>
+    <flow id="flow_left1A1_A1top0" type="car" route="route_left1A1_A1top0" begin="0" end="3600" period="1" departLane="random"/>
+
+    <flow id="flow_bottom1B0_B0A0" type="car" route="route_bottom1B0_B0A0" begin="0" end="3600" period="1" departLane="random"/>
+    <flow id="flow_bottom1B0_B0right0" type="car" route="route_bottom1B0_B0right0" begin="0" end="3600" period="1" departLane="random"/>
+    <flow id="flow_right0B0_B0A0" type="car" route="route_right0B0_B0A0" begin="0" end="3600" period="1" departLane="random"/>
+    <flow id="flow_right0B0_B0bottom1" type="car" route="route_right0B0_B0bottom1" begin="0" end="3600" period="1" departLane="random"/>
+
+    <flow id="flow_top1B1_B1right1" type="car" route="route_top1B1_B1right1" begin="0" end="3600" period="1" departLane="random"/>
+    <flow id="flow_top1B1_B1A1" type="car" route="route_top1B1_B1A1" begin="0" end="3600" period="1" departLane="random"/>
+    <flow id="flow_right1B1_B1A1" type="car" route="route_right1B1_B1A1" begin="0" end="3600" period="1" departLane="random"/>
+    <flow id="flow_right1B1_B1top1" type="car" route="route_right1B1_B1top1" begin="0" end="3600" period="1" departLane="random"/>
+
+    <!-- 定义公交车流 - 增加车辆数量和频率 -->
+    <flow id="bus_bottom0A0_A0A1_A1top0" type="bus" route="route_bottom0A0_A0A1_A1top0" begin="0" end="3600" period="10" departLane="random"/>
+    <flow id="bus_top0A1_A1A0_A0bottom0" type="bus" route="route_top0A1_A1A0_A0bottom0" begin="0" end="3600" period="10" departLane="random"/>
+    <flow id="bus_left0A0_A0B0_B0right0" type="bus" route="route_left0A0_A0B0_B0right0" begin="0" end="3600" period="10" departLane="random"/>
+    <flow id="bus_right0B0_B0A0_A0left0" type="bus" route="route_right0B0_B0A0_A0left0" begin="0" end="3600" period="10" departLane="random"/>
+</routes> 

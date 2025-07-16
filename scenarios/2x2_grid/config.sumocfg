@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+    <input>
+        <net-file value="network.net.xml"/>
+        <route-files value="routes.rou.xml"/>
+        <additional-files value="additional.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <end value="3600"/>
+        <step-length value="1.0"/>
+    </time>
+    <processing>
+        <time-to-teleport value="300"/>
+        <ignore-route-errors value="true"/>
+        <collision.action value="teleport"/>
+        <collision.stoptime value="5"/>
+        <max-depart-delay value="100"/>
+        <lanechange.duration value="2"/>
+        <routing-algorithm value="dijkstra"/>
+    </processing>
+    <report>
+        <verbose value="false"/>
+        <no-step-log value="true"/>
+        <log-file value="simulation.log"/>
+        <duration-log.statistics value="true"/>
+        <duration-log.disable value="false"/>
+        <queue-output value="queue_output.xml"/>
+    </report>
+    <gui_only>
+        <start value="true"/>
+        <quit-on-end value="false"/>
+        <delay value="50"/>
+        <window-size value="1000,800"/>
+        <window-pos value="50,50"/>
+        <gui-settings-file value="gui_settings.cfg"/>
+        <tracker-interval value="1"/>
+    </gui_only>
+</configuration> 
