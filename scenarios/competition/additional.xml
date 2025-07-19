@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 比赛场景附加文件：检测器和信号灯配置 -->
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+
+    <!-- 信号灯配置将由SUMO自动生成 -->
+
+    <!-- 基本检测器配置 -->
+    <!-- 十字路口检测器 -->
+    <inductionLoop id="det_E1" lane="E1_0" pos="150" freq="60" file="detector_output.xml"/>
+    <inductionLoop id="det_E2" lane="E2_0" pos="10" freq="60" file="detector_output.xml"/>
+    <inductionLoop id="det_E3" lane="E3_0" pos="150" freq="60" file="detector_output.xml"/>
+    <inductionLoop id="det_E4" lane="E4_0" pos="10" freq="60" file="detector_output.xml"/>
+
+    <inductionLoop id="det_-E1" lane="-E1_0" pos="150" freq="60" file="detector_output.xml"/>
+    <inductionLoop id="det_-E2" lane="-E2_0" pos="10" freq="60" file="detector_output.xml"/>
+    <inductionLoop id="det_-E3" lane="-E3_0" pos="150" freq="60" file="detector_output.xml"/>
+    <inductionLoop id="det_-E4" lane="-E4_0" pos="10" freq="60" file="detector_output.xml"/>
+
+    <!-- T型路口检测器 -->
+    <inductionLoop id="det_E5" lane="E5_0" pos="150" freq="60" file="detector_output.xml"/>
+    <inductionLoop id="det_E6" lane="E6_0" pos="10" freq="60" file="detector_output.xml"/>
+    <inductionLoop id="det_-E5" lane="-E5_0" pos="150" freq="60" file="detector_output.xml"/>
+    <inductionLoop id="det_-E6" lane="-E6_0" pos="10" freq="60" file="detector_output.xml"/>
+
+</additional>

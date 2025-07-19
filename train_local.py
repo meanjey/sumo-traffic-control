@@ -282,7 +282,7 @@ def create_local_env(scenario_name: str = "2x2_grid", gui_enabled: bool = False)
     return SimpleTrafficEnv(sumocfg_file, tls_ids, scenario_path, gui_enabled)
 
 
-def train_local_model(scenario: str = "2x2_grid", 
+def train_local_model(scenario: str = "competition",
                      timesteps: int = 200000,
                      gui: bool = False,
                      learning_rate: float = 3e-4):
@@ -381,7 +381,7 @@ def main():
     
     parser = argparse.ArgumentParser(description="本地交通信号灯控制训练")
     parser.add_argument("--mode", choices=["train", "test"], default="train", help="运行模式")
-    parser.add_argument("--scenario", default="2x2_grid", help="场景名称")
+    parser.add_argument("--scenario", default="competition", help="场景名称")
     parser.add_argument("--timesteps", type=int, default=200000, help="训练步数")
     parser.add_argument("--gui", action="store_true", help="启用GUI")
     parser.add_argument("--model-path", help="模型路径（测试模式需要）")

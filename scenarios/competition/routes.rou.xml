@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 比赛场景路由：一个十字路口 + 一个T型路口 -->
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+
+    <!-- 车辆类型定义 -->
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5.0" minGap="2.5" maxSpeed="13.89" guiShape="passenger"/>
+    <vType id="truck" accel="1.8" decel="4.0" sigma="0.3" length="12.0" minGap="3.0" maxSpeed="11.11" guiShape="truck"/>
+    <vType id="bus" accel="2.0" decel="4.2" sigma="0.4" length="15.0" minGap="3.5" maxSpeed="12.50" guiShape="bus"/>
+
+    <!-- 路由定义 -->
+    <!-- 从西到东（通过十字路口） -->
+    <route id="west_to_east" edges="E1 E2"/>
+    <!-- 从东到西（通过十字路口） -->
+    <route id="east_to_west" edges="-E2 -E1"/>
+    <!-- 从南到北（通过十字路口到T型路口） -->
+    <route id="south_to_north" edges="E3 E4"/>
+    <!-- 从北到南（从T型路口到十字路口） -->
+    <route id="north_to_south" edges="-E4 -E3"/>
+    
+    <!-- 从西到北（左转通过十字路口） -->
+    <route id="west_to_north" edges="E1 E4"/>
+    <!-- 从南到东（左转通过十字路口） -->
+    <route id="south_to_east" edges="E3 E2"/>
+    <!-- 从东到南（左转通过十字路口） -->
+    <route id="east_to_south" edges="-E2 -E3"/>
+    <!-- 从北到西（左转通过十字路口） -->
+    <route id="north_to_west" edges="-E4 -E1"/>
+    
+    <!-- 从西到南（右转通过十字路口） -->
+    <route id="west_to_south" edges="E1 -E3"/>
+    <!-- 从南到西（右转通过十字路口） -->
+    <route id="south_to_west" edges="E3 -E1"/>
+    <!-- 从东到北（右转通过十字路口） -->
+    <route id="east_to_north" edges="-E2 E4"/>
+    <!-- 从北到东（右转通过十字路口） -->
+    <route id="north_to_east" edges="-E4 E2"/>
+    
+    <!-- T型路口相关路由 -->
+    <!-- 从西北到东北（通过T型路口） -->
+    <route id="northwest_to_northeast" edges="E5 E6"/>
+    <!-- 从东北到西北（通过T型路口） -->
+    <route id="northeast_to_northwest" edges="-E6 -E5"/>
+    
+    <!-- 从南到西北（通过十字路口和T型路口） -->
+    <route id="south_to_northwest" edges="E3 E4 -E5"/>
+    <!-- 从南到东北（通过十字路口和T型路口） -->
+    <route id="south_to_northeast" edges="E3 E4 E6"/>
+    
+    <!-- 从西北到南（通过T型路口和十字路口） -->
+    <route id="northwest_to_south" edges="E5 E4 -E3"/>
+    <!-- 从东北到南（通过T型路口和十字路口） -->
+    <route id="northeast_to_south" edges="-E6 E4 -E3"/>
+    
+    <!-- 从西北到东（通过T型路口和十字路口） -->
+    <route id="northwest_to_east" edges="E5 E4 E2"/>
+    <!-- 从东北到西（通过T型路口和十字路口） -->
+    <route id="northeast_to_west" edges="-E6 E4 -E1"/>
+
+    <!-- 车流定义 -->
+    <!-- 基本车流 -->
+    <flow id="flow_west_east" route="west_to_east" begin="0" end="3600" vehsPerHour="600" type="car"/>
+    <flow id="flow_east_west" route="east_to_west" begin="0" end="3600" vehsPerHour="550" type="car"/>
+    <flow id="flow_south_north" route="south_to_north" begin="0" end="3600" vehsPerHour="400" type="car"/>
+    <flow id="flow_north_south" route="north_to_south" begin="0" end="3600" vehsPerHour="450" type="car"/>
+
+    <!-- 左转车流 -->
+    <flow id="flow_west_north" route="west_to_north" begin="0" end="3600" vehsPerHour="150" type="car"/>
+    <flow id="flow_south_east" route="south_to_east" begin="0" end="3600" vehsPerHour="120" type="car"/>
+    <flow id="flow_east_south" route="east_to_south" begin="0" end="3600" vehsPerHour="100" type="car"/>
+    <flow id="flow_north_west" route="north_to_west" begin="0" end="3600" vehsPerHour="130" type="car"/>
+
+    <!-- T型路口车流 -->
+    <flow id="flow_nw_ne" route="northwest_to_northeast" begin="0" end="3600" vehsPerHour="300" type="car"/>
+    <flow id="flow_ne_nw" route="northeast_to_northwest" begin="0" end="3600" vehsPerHour="280" type="car"/>
+
+    <!-- 跨路口车流 -->
+    <flow id="flow_south_nw" route="south_to_northwest" begin="0" end="3600" vehsPerHour="100" type="car"/>
+    <flow id="flow_south_ne" route="south_to_northeast" begin="0" end="3600" vehsPerHour="90" type="car"/>
+    <flow id="flow_nw_south" route="northwest_to_south" begin="0" end="3600" vehsPerHour="110" type="car"/>
+    <flow id="flow_ne_south" route="northeast_to_south" begin="0" end="3600" vehsPerHour="105" type="car"/>
+
+</routes>

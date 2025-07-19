@@ -406,6 +406,7 @@ def run_competition_training():
         cmd = [
             sys.executable, "train_local.py",
             "--mode", "train",
+            "--scenario", "competition",
             "--timesteps", "500000",
             "--learning-rate", "3e-4"
         ]

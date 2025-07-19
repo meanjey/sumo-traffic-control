@@ -65,7 +65,8 @@ python train_local.py --mode test --model-path local_logs/最新文件夹/final_
 ├── 📁 models/                     # 升级的AI模块
 │   ├── advanced_controller.py    # 升级版控制器
 │   └── advanced_env.py           # 升级版环境
-├── 📁 scenarios/2x2_grid/        # 仿真场景
+├── 📁 scenarios/competition/     # 🏆 比赛场景（十字路口+T型路口）
+├── 📁 scenarios/2x2_grid/        # 原始仿真场景
 ├── 📁 local_logs/                # 训练日志（自动生成）
 ├── 📁 saved_models/              # 历史训练模型
 ├── 📁 ppo_tensorboard_logs/      # TensorBoard日志

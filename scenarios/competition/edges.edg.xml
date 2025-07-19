@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 比赛场景边定义 -->
+<edges xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/edges_file.xsd">
+    <!-- 十字路口相关边 -->
+    <edge id="E1" from="J1" to="J_cross" priority="1" numLanes="2" speed="13.89"/>
+    <edge id="E2" from="J_cross" to="J2" priority="1" numLanes="2" speed="13.89"/>
+    <edge id="E3" from="J3" to="J_cross" priority="1" numLanes="2" speed="13.89"/>
+    <edge id="E4" from="J_cross" to="J_t" priority="1" numLanes="2" speed="13.89"/>
+    
+    <!-- T型路口相关边 -->
+    <edge id="E5" from="J4" to="J_t" priority="1" numLanes="2" speed="13.89"/>
+    <edge id="E6" from="J_t" to="J5" priority="1" numLanes="2" speed="13.89"/>
+    
+    <!-- 反向边 -->
+    <edge id="-E1" from="J_cross" to="J1" priority="1" numLanes="2" speed="13.89"/>
+    <edge id="-E2" from="J2" to="J_cross" priority="1" numLanes="2" speed="13.89"/>
+    <edge id="-E3" from="J_cross" to="J3" priority="1" numLanes="2" speed="13.89"/>
+    <edge id="-E4" from="J_t" to="J_cross" priority="1" numLanes="2" speed="13.89"/>
+    <edge id="-E5" from="J_t" to="J4" priority="1" numLanes="2" speed="13.89"/>
+    <edge id="-E6" from="J5" to="J_t" priority="1" numLanes="2" speed="13.89"/>
+</edges>
