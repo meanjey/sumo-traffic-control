@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/nodes_file.xsd">
+    <!-- 边界节点 -->
+    <node id="J1" x="0" y="200" type="priority"/>
+    <node id="J2" x="400" y="200" type="priority"/>
+    <node id="J3" x="200" y="0" type="priority"/>
+    <node id="J4" x="0" y="400" type="priority"/>
+    <node id="J5" x="400" y="400" type="priority"/>
+    
+    <!-- 十字路口 - 右转不受信号灯控制 -->
+    <node id="J_cross" x="200" y="200" type="traffic_light" rightOfWay="edgePriority"/>
+    
+    <!-- T型路口 - 右转不受信号灯控制 -->
+    <node id="J_t" x="200" y="400" type="traffic_light" rightOfWay="edgePriority"/>
+</nodes>

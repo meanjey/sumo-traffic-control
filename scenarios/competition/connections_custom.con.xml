@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<connections xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/connections_file.xsd">
+    <!-- 十字路口右转连接 - 不受信号灯控制 -->
+    <connection from="E1" to="-E3" fromLane="0" toLane="0" dir="r" state="M"/>
+    <connection from="E3" to="E2" fromLane="0" toLane="0" dir="r" state="M"/>
+    <connection from="-E2" to="E4" fromLane="0" toLane="0" dir="r" state="M"/>
+    <connection from="-E4" to="-E1" fromLane="0" toLane="0" dir="r" state="M"/>
+    
+    <!-- T型路口右转连接 - 不受信号灯控制 -->
+    <connection from="E4" to="E6" fromLane="0" toLane="0" dir="r" state="M"/>
+    <connection from="E4" to="E6" fromLane="1" toLane="1" dir="r" state="M"/>
+    <connection from="E5" to="-E4" fromLane="0" toLane="0" dir="r" state="M"/>
+</connections>
