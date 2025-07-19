@@ -40,6 +40,12 @@
     <route id="northwest_to_northeast" edges="E5 E6"/>
     <!-- 从东北到西北（通过T型路口） -->
     <route id="northeast_to_northwest" edges="-E6 -E5"/>
+
+    <!-- T型路口右转路由（不受信号灯控制） -->
+    <!-- 从南到东北（右转通过T型路口） -->
+    <route id="south_to_northeast_right" edges="E4 E6"/>
+    <!-- 从西北到南（右转通过T型路口） -->
+    <route id="northwest_to_south_right" edges="E5 -E4"/>
     
     <!-- 从南到西北（通过十字路口和T型路口） -->
     <route id="south_to_northwest" edges="E3 E4 -E5"/>
@@ -69,9 +75,19 @@
     <flow id="flow_east_south" route="east_to_south" begin="0" end="3600" vehsPerHour="60" type="car"/>
     <flow id="flow_north_west" route="north_to_west" begin="0" end="3600" vehsPerHour="75" type="car"/>
 
+    <!-- 右转车流（不受信号灯控制，增加流量） -->
+    <flow id="flow_west_south" route="west_to_south" begin="0" end="3600" vehsPerHour="120" type="car"/>
+    <flow id="flow_south_west" route="south_to_west" begin="0" end="3600" vehsPerHour="110" type="car"/>
+    <flow id="flow_east_north" route="east_to_north" begin="0" end="3600" vehsPerHour="100" type="car"/>
+    <flow id="flow_north_east" route="north_to_east" begin="0" end="3600" vehsPerHour="115" type="car"/>
+
     <!-- T型路口车流（适中流量） -->
     <flow id="flow_nw_ne" route="northwest_to_northeast" begin="0" end="3600" vehsPerHour="200" type="car"/>
     <flow id="flow_ne_nw" route="northeast_to_northwest" begin="0" end="3600" vehsPerHour="180" type="car"/>
+
+    <!-- T型路口右转车流（不受信号灯控制，增加流量） -->
+    <flow id="flow_south_ne_right" route="south_to_northeast_right" begin="0" end="3600" vehsPerHour="150" type="car"/>
+    <flow id="flow_nw_south_right" route="northwest_to_south_right" begin="0" end="3600" vehsPerHour="140" type="car"/>
 
     <!-- 跨路口车流（大幅减少，避免拥堵） -->
     <flow id="flow_south_nw" route="south_to_northwest" begin="0" end="3600" vehsPerHour="20" type="car"/>
