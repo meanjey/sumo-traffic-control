@@ -1,4 +1,4 @@
-想·#!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 本地使用启动脚本
