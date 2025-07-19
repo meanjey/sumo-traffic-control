@@ -400,61 +400,64 @@ class AdvancedTLSController:
             # 基础奖励组件
             reward_components = {}
             
-            # 1. 等待时间惩罚（非线性）
-            waiting_penalty = -(ns_waiting + ew_waiting) * 0.1
-            if ns_waiting > 60 or ew_waiting > 60:  # 严重拥堵额外惩罚
-                waiting_penalty *= 2
+            # 1. 等待时间惩罚（归一化处理）
+            avg_waiting = (ns_waiting + ew_waiting) / 2.0
+            waiting_penalty = -min(avg_waiting / 60.0, 2.0)  # 归一化到[-2, 0]
             reward_components['waiting'] = waiting_penalty
-            
-            # 2. 队列长度惩罚（考虑密度）
-            queue_penalty = -(ns_queue + ew_queue) * 0.5
-            density_penalty = -(ns_density + ew_density) * 0.3
+
+            # 2. 队列长度惩罚（归一化处理）
+            avg_queue = (ns_queue + ew_queue) / 2.0
+            queue_penalty = -min(avg_queue / 20.0, 1.0)  # 归一化到[-1, 0]
+
+            avg_density = (ns_density + ew_density) / 2.0
+            density_penalty = -min(avg_density / 0.5, 0.5)  # 归一化到[-0.5, 0]
             reward_components['queue'] = queue_penalty + density_penalty
-            
-            # 3. 速度奖励（鼓励流畅通行）
-            speed_reward = (ns_speed + ew_speed) * 0.2
+
+            # 3. 速度奖励（归一化处理）
+            avg_speed = (ns_speed + ew_speed) / 2.0
+            speed_reward = min(avg_speed / 13.89, 1.0)  # 归一化到[0, 1]
             reward_components['speed'] = speed_reward
-            
-            # 4. 通行效率奖励
-            efficiency_reward = throughput * 1.0
+
+            # 4. 通行效率奖励（归一化处理）
+            efficiency_reward = min(throughput / 10.0, 1.0)  # 归一化到[0, 1]
             reward_components['efficiency'] = efficiency_reward
             
-            # 5. 相位切换惩罚（智能化）
+            # 5. 相位切换惩罚（智能化，归一化）
             switch_penalty = 0
             if action == 1:  # 切换动作
                 # 基础切换惩罚
-                switch_penalty = -10.0
-                
+                switch_penalty = -0.2
+
                 # 如果切换过于频繁，额外惩罚
                 if time_in_phase < 10:
-                    switch_penalty -= 20.0
-                
+                    switch_penalty -= 0.3
+
                 # 如果当前方向没有车辆但要切换，额外惩罚
                 current_direction_vehicles = ns_vehicles if current_phase in [0, 1] else ew_vehicles
                 if current_direction_vehicles == 0:
-                    switch_penalty -= 15.0
-                    
+                    switch_penalty -= 0.2
+
             reward_components['switch'] = switch_penalty
-            
-            # 6. 平衡性奖励（鼓励各方向均衡通行）
+
+            # 6. 平衡性奖励（鼓励各方向均衡通行，归一化）
             vehicle_imbalance = abs(ns_vehicles - ew_vehicles)
-            balance_penalty = -vehicle_imbalance * 0.1
+            balance_penalty = -min(vehicle_imbalance / 20.0, 0.5)  # 归一化到[-0.5, 0]
             reward_components['balance'] = balance_penalty
             
-            # 7. 历史趋势奖励
+            # 7. 历史趋势奖励（归一化）
             trend_reward = 0
             if len(self.observation_history) >= 2:
                 prev_total_vehicles = self.observation_history[-2][14]
                 if total_vehicles < prev_total_vehicles:  # 车辆总数减少
-                    trend_reward = 5.0
+                    trend_reward = 0.1
                 elif total_vehicles > prev_total_vehicles:  # 车辆总数增加
-                    trend_reward = -2.0
+                    trend_reward = -0.05
             reward_components['trend'] = trend_reward
-            
-            # 8. 紧急情况处理
+
+            # 8. 紧急情况处理（归一化）
             emergency_penalty = 0
             if ns_waiting > 120 or ew_waiting > 120:  # 极度拥堵
-                emergency_penalty = -50.0
+                emergency_penalty = -1.0
             reward_components['emergency'] = emergency_penalty
             
             # 计算总奖励

@@ -108,19 +108,57 @@ class AdvancedTrafficEnv(gym.Env):
         except Exception as e:
             logger.error(f"启动SUMO失败: {e}")
             raise
-            
+
+    def _is_connection_alive(self) -> bool:
+        """检查SUMO连接是否存活"""
+        try:
+            traci.simulation.getTime()
+            return True
+        except:
+            return False
+
+    def _restart_sumo(self):
+        """重新启动SUMO"""
+        try:
+            # 关闭现有连接
+            if self._sumo_started:
+                try:
+                    traci.close()
+                except:
+                    pass
+                self._sumo_started = False
+
+            # 重新启动
+            self._start_sumo()
+
+        except Exception as e:
+            logger.error(f"重启SUMO失败: {e}")
+            raise
+
     def reset(self, seed: Optional[int] = None, options: Optional[Dict] = None) -> Tuple[np.ndarray, Dict]:
         """重置环境"""
         super().reset(seed=seed)
         
         try:
+            # 检查连接状态并重新连接
+            if not self._is_connection_alive():
+                logger.warning("SUMO连接已断开，重新启动...")
+                self._restart_sumo()
+
             # 重新加载仿真
             sumo_cmd = ["-c", self.sumocfg_file, "--quit-on-end", "--no-warnings"]
             if self.render_mode == 'human':
                 sumo_cmd.extend(["--start"])
             else:
                 sumo_cmd.append("--no-step-log")
-            traci.load(sumo_cmd)
+
+            # 安全地加载新仿真
+            try:
+                traci.load(sumo_cmd)
+            except Exception as load_error:
+                logger.warning(f"加载失败，重新启动SUMO: {load_error}")
+                self._restart_sumo()
+                traci.load(sumo_cmd)
             
             # 重置计数器
             self.step_count = 0
@@ -175,6 +213,13 @@ class AdvancedTrafficEnv(gym.Env):
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, bool, Dict]:
         """执行一步"""
         try:
+            # 检查连接状态
+            if not self._is_connection_alive():
+                logger.error("SUMO连接已断开")
+                # 返回终止状态
+                observation = np.zeros(self.observation_space.shape, dtype=np.float32)
+                return observation, -100.0, True, True, {"error": "Connection lost"}
+
             # 执行仿真步
             traci.simulationStep()
             self.step_count += 1
@@ -236,14 +281,21 @@ class AdvancedTrafficEnv(gym.Env):
             return observation, global_reward, terminated, truncated, info
             
         except Exception as e:
-            logger.error(f"环境步骤执行失败: {e}")
-            # 返回安全的默认值
-            observation = np.zeros(self.observation_space.shape, dtype=np.float32)
-            reward = -100.0
-            terminated = True
-            truncated = False
-            info = {"error": str(e)}
-            return observation, reward, terminated, truncated, info
+            logger.error(f"步骤执行失败: {e}")
+            # 检查是否是连接问题
+            if "Connection already closed" in str(e) or not self._is_connection_alive():
+                logger.error("SUMO连接断开，终止当前回合")
+                # 返回终止状态，让环境重置
+                observation = np.zeros(self.observation_space.shape, dtype=np.float32)
+                return observation, -100.0, True, True, {"error": "Connection lost"}
+            else:
+                # 其他错误，返回安全的默认值
+                observation = np.zeros(self.observation_space.shape, dtype=np.float32)
+                reward = -10.0  # 较小的惩罚，不要太大
+                terminated = False  # 不终止，继续尝试
+                truncated = False
+                info = {"error": str(e)}
+                return observation, reward, terminated, truncated, info
             
     def _enhance_observations_with_coordination(self, observations: List[np.ndarray]) -> List[np.ndarray]:
         """用协调信号增强观测"""
@@ -296,13 +348,13 @@ class AdvancedTrafficEnv(gym.Env):
                 all_vehicle_counts.append(metrics.get('total_vehicles', 0))
                 
             if len(all_waiting_times) > 1:
-                # 奖励等待时间的均衡性
+                # 奖励等待时间的均衡性（归一化）
                 waiting_std = np.std(all_waiting_times)
-                coordination_reward -= waiting_std * 0.1
-                
-                # 奖励车辆分布的均衡性
+                coordination_reward -= min(waiting_std / 60.0, 0.2)
+
+                # 奖励车辆分布的均衡性（归一化）
                 vehicle_std = np.std(all_vehicle_counts)
-                coordination_reward -= vehicle_std * 0.05
+                coordination_reward -= min(vehicle_std / 20.0, 0.1)
                 
             return coordination_reward * self.adaptive_params['reward_weights']['coordination']
             
