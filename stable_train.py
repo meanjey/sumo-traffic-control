@@ -19,6 +19,7 @@ sys.path.insert(0, str(project_root))
 from models.advanced_env import AdvancedTrafficEnv
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.monitor import Monitor
 
 # 设置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -76,24 +77,27 @@ def stable_train(scenario: str = "competition",
             
             # 创建环境
             logger.info("创建环境...")
-            env = AdvancedTrafficEnv(
+            base_env = AdvancedTrafficEnv(
                 sumocfg_file=f"scenarios/{scenario}/config.sumocfg",
                 tls_ids=["J_cross", "J_t"],  # 两个路口ID
                 scenario_path=f"scenarios/{scenario}",
                 render_mode='human' if gui else None,
                 config={
                     'reward_weights': {
-                        'waiting_time': 0.25,
-                        'queue_length': 0.20,
-                        'speed': 0.20,
-                        'throughput': 0.15,
-                        'switch_penalty': 0.05,
-                        'balance': 0.10,
-                        'trend': 0.03,
-                        'emergency': 0.02
+                        'waiting_time': 0.35,    # 增加等待时间权重
+                        'queue_length': 0.25,    # 增加队列长度权重
+                        'speed': 0.15,           # 减少速度权重
+                        'throughput': 0.10,      # 减少通行量权重
+                        'switch_penalty': 0.03,  # 减少切换惩罚
+                        'balance': 0.05,         # 减少平衡权重
+                        'trend': 0.02,           # 减少趋势权重
+                        'emergency': 0.05        # 增加紧急情况权重
                     }
                 }
             )
+
+            # 用Monitor包装环境，生成评估所需的monitor.csv
+            env = Monitor(base_env, str(log_dir / "monitor.csv"))
             
             logger.info("环境创建成功")
             
@@ -132,16 +136,21 @@ def stable_train(scenario: str = "competition",
             training_time = time.time() - start_time
             logger.info(f"训练完成，耗时: {training_time:.2f}秒")
             
-            # 保存模型
-            model_path = log_dir / "stable_model.zip"
-            model.save(str(model_path))
-            logger.info(f"模型已保存: {model_path}")
-            
+            # 保存模型（同时保存为stable_model.zip和final_model.zip）
+            stable_model_path = log_dir / "stable_model.zip"
+            final_model_path = log_dir / "final_model.zip"
+
+            model.save(str(stable_model_path))
+            model.save(str(final_model_path))  # 为评估系统保存
+
+            logger.info(f"模型已保存: {stable_model_path}")
+            logger.info(f"评估模型已保存: {final_model_path}")
+
             # 关闭环境
             env.close()
             
             # 训练成功，返回
-            return str(model_path)
+            return str(stable_model_path)
             
         except Exception as e:
             logger.error(f"训练尝试 {attempt + 1} 失败: {e}")
@@ -169,12 +178,15 @@ def test_stable_model(model_path: str, gui: bool = True):
     
     try:
         # 创建环境
-        env = AdvancedTrafficEnv(
+        base_env = AdvancedTrafficEnv(
             sumocfg_file="scenarios/competition/config.sumocfg",
             tls_ids=["J_cross", "J_t"],
             scenario_path="scenarios/competition",
             render_mode='human' if gui else None
         )
+
+        # 用Monitor包装环境
+        env = Monitor(base_env)
         
         # 加载模型
         model = PPO.load(model_path, env=env)

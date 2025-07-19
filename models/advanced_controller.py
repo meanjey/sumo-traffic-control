@@ -454,10 +454,20 @@ class AdvancedTLSController:
                     trend_reward = -0.05
             reward_components['trend'] = trend_reward
 
-            # 8. 紧急情况处理（归一化）
+            # 8. 紧急情况处理（加强拥堵惩罚）
             emergency_penalty = 0
+            # 严重拥堵惩罚
             if ns_waiting > 120 or ew_waiting > 120:  # 极度拥堵
+                emergency_penalty = -2.0
+            elif ns_waiting > 80 or ew_waiting > 80:  # 严重拥堵
                 emergency_penalty = -1.0
+            elif ns_waiting > 60 or ew_waiting > 60:  # 中度拥堵
+                emergency_penalty = -0.5
+
+            # 队列长度过长的额外惩罚
+            if ns_queue > 15 or ew_queue > 15:  # 队列过长
+                emergency_penalty -= 1.0
+
             reward_components['emergency'] = emergency_penalty
             
             # 计算总奖励

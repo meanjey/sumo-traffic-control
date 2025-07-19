@@ -245,19 +245,20 @@ class SimpleTrafficEnv(gym.Env):
 
 class SimpleCallback(BaseCallback):
     """简单的训练回调"""
-    
-    def __init__(self, save_freq: int = 10000, verbose: int = 1):
+
+    def __init__(self, save_freq: int = 10000, log_dir: str = None, verbose: int = 1):
         super().__init__(verbose)
         self.save_freq = save_freq
+        self.log_dir = log_dir or "."
         self.best_mean_reward = -np.inf
-        
+
     def _on_step(self) -> bool:
         # 定期保存模型
         if self.num_timesteps % self.save_freq == 0:
-            model_path = f"model_checkpoint_{self.num_timesteps}.zip"
+            model_path = os.path.join(self.log_dir, f"model_checkpoint_{self.num_timesteps}.zip")
             self.model.save(model_path)
             logger.info(f"模型已保存: {model_path}")
-            
+
         return True
 
 
@@ -313,7 +314,7 @@ def train_local_model(scenario: str = "competition",
         )
         
         # 创建回调
-        callback = SimpleCallback(save_freq=10000)
+        callback = SimpleCallback(save_freq=10000, log_dir=log_dir)
         
         # 开始训练
         logger.info(f"开始训练，总步数: {timesteps}")
