@@ -1,0 +1,55 @@
+environment:
+  connection_timeout: 30
+  history_length: 10
+  max_connection_retries: 5
+  max_phase_duration: 120
+  min_phase_duration: 10
+  num_actions: 4
+  observation_dim: 25
+  retry_delay: 10
+  step_length: 1.0
+  sumo_binary: sumo
+  sumo_gui_binary: sumo-gui
+reward:
+  balance: 0.05
+  coordination: 0.1
+  emergency: 0.05
+  emergency_waiting_threshold: 120.0
+  max_queue_length: 20.0
+  max_speed: 15.0
+  max_waiting_time: 120.0
+  moderate_waiting_threshold: 60.0
+  queue_length: 0.25
+  severe_waiting_threshold: 80.0
+  speed: 0.15
+  switch_penalty: 0.03
+  throughput: 0.1
+  trend: 0.02
+  waiting_time: 0.4
+scenario:
+  additional_file: additional.xml
+  name: competition
+  network_file: network.net.xml
+  path: scenarios/competition
+  route_file: routes.rou.xml
+  sumocfg_file: config.sumocfg
+  tls_ids:
+  - J_cross
+  - J_t
+training:
+  batch_size: 64
+  clip_range: 0.2
+  ent_coef: 0.01
+  eval_freq: 50000
+  gae_lambda: 0.95
+  gamma: 0.99
+  learning_rate: 0.0003
+  log_interval: 100
+  max_grad_norm: 0.5
+  max_steps: 3600
+  n_epochs: 10
+  n_steps: 2048
+  num_agents: 2
+  save_freq: 10000
+  timesteps: 200000
+  vf_coef: 0.5

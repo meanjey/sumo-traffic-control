@@ -20,6 +20,9 @@ from models.advanced_env import AdvancedTrafficEnv
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.monitor import Monitor
+from config import get_config
+from utils.error_handler import error_handler, log_manager, monitor_resources
+from utils.performance_monitor import performance_monitor, monitor_performance
 
 # 设置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -28,14 +31,36 @@ logger = logging.getLogger(__name__)
 
 class StableTrainingCallback(BaseCallback):
     """稳定训练回调，处理连接断开等问题"""
-    
-    def __init__(self, check_freq: int = 100):
+
+    def __init__(self, check_freq: int = 100, log_dir: Path = None):
         super().__init__()
         self.check_freq = check_freq
         self.connection_errors = 0
         self.max_connection_errors = 5
-        
+        self.log_dir = log_dir
+        self.episode_count = 0
+        self.last_episode_reward = 0
+
     def _on_step(self) -> bool:
+        # 性能监控
+        if hasattr(self.locals, 'infos') and self.locals['infos']:
+            info = self.locals['infos'][0] if isinstance(self.locals['infos'], list) else self.locals['infos']
+            reward = self.locals.get('rewards', [0])[0] if isinstance(self.locals.get('rewards'), list) else self.locals.get('rewards', 0)
+
+            # 更新性能监控
+            performance_monitor.update(
+                episode=self.episode_count,
+                step=self.n_calls,
+                metrics={
+                    'reward': reward,
+                    'waiting_time': info.get('waiting_time', 0),
+                    'queue_length': info.get('queue_length', 0),
+                    'throughput': info.get('throughput', 0),
+                    'speed': info.get('speed', 0),
+                    'phase_switches': info.get('phase_switches', 0)
+                }
+            )
+
         # 每隔一定步数检查连接状态
         if self.n_calls % self.check_freq == 0:
             try:
@@ -44,28 +69,69 @@ class StableTrainingCallback(BaseCallback):
                     env = self.training_env.envs[0]
                 else:
                     env = self.training_env
-                    
+
                 if hasattr(env, '_is_connection_alive'):
                     if not env._is_connection_alive():
                         logger.warning("检测到连接断开")
                         self.connection_errors += 1
-                        
+
                         if self.connection_errors >= self.max_connection_errors:
                             logger.error("连接错误过多，停止训练")
                             return False
-                            
+
+                # 生成性能报告
+                if self.n_calls % (self.check_freq * 10) == 0:
+                    self._generate_progress_report()
+
             except Exception as e:
                 logger.warning(f"连接检查失败: {e}")
-                
+
         return True
 
+    def _on_rollout_end(self) -> None:
+        """回合结束时的处理"""
+        self.episode_count += 1
 
-def stable_train(scenario: str = "competition", 
+    def _generate_progress_report(self):
+        """生成进度报告"""
+        try:
+            report = performance_monitor.analyzer.generate_report()
+            logger.info(f"训练进度报告: 步骤 {self.n_calls}")
+            logger.info(f"评估: {report.get('training_progress', {}).get('recent_performance', {}).get('assessment', 'unknown')}")
+
+            # 保存报告
+            if self.log_dir:
+                report_file = self.log_dir / f"progress_report_{self.n_calls}.json"
+                import json
+                with open(report_file, 'w', encoding='utf-8') as f:
+                    json.dump(report, f, indent=2, ensure_ascii=False)
+
+        except Exception as e:
+            logger.error(f"生成进度报告失败: {e}")
+
+
+@monitor_resources
+@monitor_performance
+def stable_train(scenario: str = "competition",
                 timesteps: int = 50000,
                 gui: bool = False,
                 max_retries: int = 3):
     """稳定训练函数，带重试机制"""
-    
+
+    # 获取配置
+    config = get_config()
+
+    # 记录训练开始
+    training_config = {
+        'scenario': scenario,
+        'timesteps': timesteps,
+        'gui': gui,
+        'max_retries': max_retries
+    }
+    log_manager.log_training_start(training_config)
+
+    start_time = time.time()
+
     for attempt in range(max_retries):
         logger.info(f"开始训练尝试 {attempt + 1}/{max_retries}")
         
@@ -79,20 +145,12 @@ def stable_train(scenario: str = "competition",
             logger.info("创建环境...")
             base_env = AdvancedTrafficEnv(
                 sumocfg_file=f"scenarios/{scenario}/config.sumocfg",
-                tls_ids=["J_cross", "J_t"],  # 两个路口ID
+                tls_ids=config.scenario.tls_ids,
                 scenario_path=f"scenarios/{scenario}",
                 render_mode='human' if gui else None,
                 config={
-                    'reward_weights': {
-                        'waiting_time': 0.35,    # 增加等待时间权重
-                        'queue_length': 0.25,    # 增加队列长度权重
-                        'speed': 0.15,           # 减少速度权重
-                        'throughput': 0.10,      # 减少通行量权重
-                        'switch_penalty': 0.03,  # 减少切换惩罚
-                        'balance': 0.05,         # 减少平衡权重
-                        'trend': 0.02,           # 减少趋势权重
-                        'emergency': 0.05        # 增加紧急情况权重
-                    }
+                    'reward_weights': config.get_reward_weights(),
+                    'environment': config.get_environment_params()
                 }
             )
 

@@ -153,39 +153,63 @@ class MultiIntersectionNetwork(nn.Module):
 class AdvancedTLSController:
     """升级版交通信号灯控制器"""
     
-    def __init__(self, tls_id: str, additional_file_path: str, config: Dict[str, Any] = None):
+    def __init__(self, tls_id: str, additional_file_path: str = None, config: Dict[str, Any] = None):
         self.tls_id = tls_id
         self.additional_file_path = additional_file_path
         self.config = config or {}
-        
+
         # 历史数据存储
         self.history_length = self.config.get('history_length', 10)
         self.observation_history = deque(maxlen=self.history_length)
         self.action_history = deque(maxlen=self.history_length)
         self.reward_history = deque(maxlen=self.history_length)
-        
+
         # 交通信号灯信息
         self.program = None
         self.num_phases = 0
         self.phase_durations = {}
         self.current_phase = 0
         self.time_in_phase = 0
-        
+
         # 车道和检测器映射
         self.lane_to_detector_map = {}
         self.incoming_lanes = {}
         self.lane_data = {}
         self.direction_data = {}
-        
+
         # 性能统计
         self.total_vehicles_at_intersection = 0
         self.cumulative_waiting_time = 0
         self.cumulative_throughput = 0
         self.phase_switch_count = 0
+
+        # 状态标志
+        self.is_initialized = False
+
+        # 延迟初始化，等待SUMO连接建立
+        self._safe_initialize()
         
-        # 初始化
-        self._initialize()
-        
+    def _safe_initialize(self):
+        """安全初始化控制器"""
+        try:
+            # 检查SUMO连接
+            if not self._check_sumo_connection():
+                logger.warning(f"SUMO连接未建立，延迟初始化控制器 {self.tls_id}")
+                return
+
+            self._initialize()
+
+        except Exception as e:
+            logger.warning(f"控制器初始化失败，将在后续重试: {e}")
+
+    def _check_sumo_connection(self) -> bool:
+        """检查SUMO连接状态"""
+        try:
+            traci.simulation.getTime()
+            return True
+        except:
+            return False
+
     def _initialize(self):
         """初始化控制器"""
         try:
@@ -193,17 +217,20 @@ class AdvancedTLSController:
             self.program = traci.trafficlight.getAllProgramLogics(self.tls_id)[0]
             self.num_phases = len(self.program.phases)
             self.phase_durations = {i: phase.duration for i, phase in enumerate(self.program.phases)}
-            
+
             # 解析检测器映射
-            self._parse_detector_mapping()
-            
+            if self.additional_file_path:
+                self._parse_detector_mapping()
+
             # 设置进口车道
             self._setup_incoming_lanes()
-            
+
+            self.is_initialized = True
             logger.info(f"升级版控制器初始化完成，路口: {self.tls_id}, 相位数: {self.num_phases}")
-            
+
         except Exception as e:
             logger.error(f"控制器初始化失败: {e}")
+            self.is_initialized = False
             
     def _parse_detector_mapping(self):
         """解析车道到检测器的映射"""
@@ -259,50 +286,90 @@ class AdvancedTLSController:
     def get_enhanced_observation(self) -> np.ndarray:
         """获取增强的观测数据"""
         try:
+            # 确保控制器已初始化
+            if not self.is_initialized:
+                self._safe_initialize()
+                if not self.is_initialized:
+                    return np.zeros(20, dtype=np.float32)
+
             # 基础交通数据
             self._collect_traffic_data()
-            
+
+            # 安全获取数据，添加边界检查
+            ns_data = self.direction_data.get("north_south", {})
+            ew_data = self.direction_data.get("east_west", {})
+
             # 构建增强观测向量（20维）
-            observation = np.array([
-                # 基础信号灯状态 (4维)
-                self.current_phase,
-                self.time_in_phase,
-                self.num_phases,
-                self.phase_switch_count,
-                
-                # 南北方向交通状态 (5维)
-                self.direction_data.get("north_south", {}).get("queue_length", 0),
-                self.direction_data.get("north_south", {}).get("waiting_time", 0),
-                self.direction_data.get("north_south", {}).get("avg_speed", 0),
-                self.direction_data.get("north_south", {}).get("vehicle_count", 0),
-                self.direction_data.get("north_south", {}).get("density", 0),
-                
-                # 东西方向交通状态 (5维)
-                self.direction_data.get("east_west", {}).get("queue_length", 0),
-                self.direction_data.get("east_west", {}).get("waiting_time", 0),
-                self.direction_data.get("east_west", {}).get("avg_speed", 0),
-                self.direction_data.get("east_west", {}).get("vehicle_count", 0),
-                self.direction_data.get("east_west", {}).get("density", 0),
-                
-                # 全局统计 (3维)
-                self.total_vehicles_at_intersection,
-                self.cumulative_waiting_time / max(1, self.time_in_phase),  # 平均等待时间
-                self.cumulative_throughput,
-                
-                # 时序特征 (3维)
-                len(self.observation_history),
-                np.mean([obs[0] for obs in self.observation_history]) if self.observation_history else 0,  # 历史相位均值
-                np.std([obs[1] for obs in self.observation_history]) if len(self.observation_history) > 1 else 0,  # 历史时间方差
-            ], dtype=np.float32)
-            
+            observation_values = [
+                # 基础信号灯状态 (4维) - 归一化
+                self._safe_normalize(self.current_phase, 0, max(1, self.num_phases - 1)),
+                self._safe_normalize(self.time_in_phase, 0, 120),
+                self._safe_normalize(self.num_phases, 1, 8),
+                self._safe_normalize(self.phase_switch_count, 0, 100),
+
+                # 南北方向交通状态 (5维) - 归一化
+                self._safe_normalize(ns_data.get("queue_length", 0), 0, 20),
+                self._safe_normalize(ns_data.get("waiting_time", 0), 0, 120),
+                self._safe_normalize(ns_data.get("avg_speed", 0), 0, 15),
+                self._safe_normalize(ns_data.get("vehicle_count", 0), 0, 30),
+                self._safe_normalize(ns_data.get("density", 0), 0, 1),
+
+                # 东西方向交通状态 (5维) - 归一化
+                self._safe_normalize(ew_data.get("queue_length", 0), 0, 20),
+                self._safe_normalize(ew_data.get("waiting_time", 0), 0, 120),
+                self._safe_normalize(ew_data.get("avg_speed", 0), 0, 15),
+                self._safe_normalize(ew_data.get("vehicle_count", 0), 0, 30),
+                self._safe_normalize(ew_data.get("density", 0), 0, 1),
+
+                # 全局统计 (3维) - 归一化
+                self._safe_normalize(self.total_vehicles_at_intersection, 0, 50),
+                self._safe_normalize(self.cumulative_waiting_time / max(1, self.time_in_phase), 0, 60),
+                self._safe_normalize(self.cumulative_throughput, 0, 100),
+
+                # 时序特征 (3维) - 归一化
+                self._safe_normalize(len(self.observation_history), 0, self.history_length),
+                self._safe_value(np.mean([obs[0] for obs in self.observation_history]) if self.observation_history else 0),
+                self._safe_value(np.std([obs[1] for obs in self.observation_history]) if len(self.observation_history) > 1 else 0),
+            ]
+
+            # 检查并修复无效值
+            observation_values = [self._fix_invalid_value(x) for x in observation_values]
+
+            observation = np.array(observation_values, dtype=np.float32)
+
             # 添加到历史记录
             self.observation_history.append(observation.copy())
-            
+
             return observation
-            
+
         except Exception as e:
             logger.error(f"获取观测失败: {e}")
             return np.zeros(20, dtype=np.float32)
+
+    def _safe_normalize(self, value: float, min_val: float, max_val: float) -> float:
+        """安全归一化，处理边界情况"""
+        try:
+            if max_val == min_val:
+                return 0.0
+            normalized = (value - min_val) / (max_val - min_val)
+            return np.clip(normalized, 0.0, 1.0)
+        except:
+            return 0.0
+
+    def _safe_value(self, value: float) -> float:
+        """安全获取数值"""
+        try:
+            if np.isnan(value) or np.isinf(value):
+                return 0.0
+            return float(value)
+        except:
+            return 0.0
+
+    def _fix_invalid_value(self, value: float) -> float:
+        """修复无效数值"""
+        if np.isnan(value) or np.isinf(value):
+            return 0.0
+        return np.clip(value, -10.0, 10.0)  # 限制极值
             
     def _collect_traffic_data(self):
         """收集交通数据"""
