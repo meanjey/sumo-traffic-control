@@ -55,3 +55,18 @@ ENV/
 *.temp
 *.bak
 *.backup
+
+# 测试文件
+test_*.py
+*_test.py
+.pytest_cache/
+
+# 文档草稿
+*_draft.md
+*_temp.md
+UPGRADE_NOTES.md
+CHANGELOG.md
+
+# 日志文件
+logs/
+*.log
