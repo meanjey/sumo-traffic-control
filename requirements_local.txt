@@ -1,29 +1,27 @@
-# 核心强化学习库
+﻿# Core reinforcement learning libraries
 stable-baselines3[extra]>=2.0.0
 gymnasium>=0.28.1
 torch>=2.0.0
 
-# SUMO相关
+# SUMO related
 sumo-rl>=1.4.0
-traci>=1.19.0
 
-# 数据处理和可视化
+# Data processing and visualization
 numpy>=1.21.0,<2.0.0
 pandas>=1.3.0,<3.0.0
 matplotlib>=3.5.0,<4.0.0
 seaborn>=0.11.0
 
-# 监控和日志
+# Monitoring and logging
 tensorboard>=2.10.0
 tqdm>=4.64.0
-wandb>=0.15.0
 
-# 配置和工具
+# Configuration and tools
 pyyaml>=6.0
 python-dotenv>=1.0.0
 psutil>=5.9.0
 
-# 开发工具
+# Development tools (optional)
 pytest>=7.0.0
 black>=22.0.0
 flake8>=5.0.0
